@@ -14,7 +14,7 @@ using .DatabaseSetup
 export fetch_all_data, clean_data, transform_data, setup_database
 
 function fetch_all_data()
-    gdp_data = DataFetch.fetch_gdp_data()
+    gdp_data = DataFetch.fetch_economic_data()
     climate_data = DataFetch.fetch_climate_data()
     disaster_data = DataFetch.fetch_disaster_data()
     combined_data = vcat(gdp_data, climate_data, disaster_data)

@@ -7,11 +7,13 @@ using DataFrames
 # Functions for fetching data from different sources
 
 """
-    fetch_gdp_data()
+    fetch_economic_data()
 
 Fetches GDP data from the World Bank API.
 """
-function fetch_gdp_data()
+function fetch_economic_data()
+  
+    
     # API endpoint and parameters
     url = "http://api.worldbank.org/v2/country/all/indicator/NY.GDP.MKTP.CD?date=2000:2021&format=json"
 
