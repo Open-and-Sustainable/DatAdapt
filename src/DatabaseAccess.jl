@@ -73,7 +73,7 @@ function create_and_insert_table!(df::DataFrame, con::DuckDB.DB, table_name::Str
     end
 end
 
-function write_duckdb_table(df::DataFrame, db_path::String, table_name::String)
+function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
     # Create or connect to the DuckDB database
     con = create_or_connect_duckdb(db_path)
     # Drop the table if it exists
