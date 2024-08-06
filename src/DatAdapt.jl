@@ -16,7 +16,7 @@ using .DamageDataFetch
 #using .DataCleaning
 
 
-export fetch_exposure_data
+export fetch_exposure_data, fetch_damage_data
 
 function fetch_exposure_data()
     # wb_test_data = DataFetch.fetch_WB_test_data()
