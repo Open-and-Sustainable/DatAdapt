@@ -1,29 +1,26 @@
 module DatAdapt
 
 using DataFrames
-using DuckDB
+#using DuckDB
 
 # Include and use the renamed modules
 include("DataFetch.jl")
-include("DataCleaning.jl")
-include("DatabaseSetup.jl")
+include("DatabaseAccess.jl")
+#include("DataCleaning.jl")
+
 using .DataFetch
-using .DataCleaning
-using .DatabaseSetup
+using .DatabaseAccess
+#using .DataCleaning
 
-# Core functions and types
-export fetch_all_data, clean_data, transform_data, setup_database
 
-function fetch_all_data()
-    E_data = DataFetch.fetch_exposure_data(2021, 2021)
-    # Path to the DuckDB database file
+export fetch_exposure_data
+
+function fetch_exposure_data()
+    # wb_test_data = DataFetch.fetch_WB_test_data()
+    # write_duckdb_table(wb_test_data, db_path, "wb_test_data")
     db_path = "data/raw/DatAdapt_1990-2021.duckdb"
-
-    
-    #climate_data = DataFetch.fetch_hazard_data()
-    #disaster_data = DataFetch.fetch_damage_data()
-    #combined_data = vcat(gdp_data, climate_data, disaster_data)
-    return combined_data
+    E_data = DataFetch.fetch_exposure_data(1980, 2021)
+    write_duckdb_table(E_data, db_path, "exposure")
 end
 
 function clean_data(df::DataFrame)
