@@ -28,7 +28,7 @@ end
 
 function fetch_damage_data()
     db_path = "data/raw/DatAdapt_1980-2021.duckdb"
-    D_data = ExposureDataFetch.fetch_damage_data(1980, 2021)
+    D_data = DamageDataFetch.fetch_damage_data(1980, 2021)
     DatabaseAccess.write_duckdb_table!(D_data, db_path, "damage")
 end
 

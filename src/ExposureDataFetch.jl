@@ -28,7 +28,7 @@ function fetch_exposure_data(start_year::Int, end_year::Int)
             url = string(base_url, indicator, "?date=", start_year, ":", end_year, "&format=json&per_page=50&page=", page)
 
             # Making the API request
-            response = HTTP.get(url)
+            response = fetch_with_retries(url)
             if response.status != 200
                 error("Failed to fetch data for indicator $indicator: HTTP status $(response.status)")
             end
@@ -62,6 +62,21 @@ function fetch_exposure_data(start_year::Int, end_year::Int)
     return combined_df
 end
 
+function fetch_with_retries(url::String; retries::Int=5, delay::Int=5)
+    attempt = 0
+    while attempt < retries
+        try
+            response = HTTP.get(url)
+            return response
+        catch e
+            println("Attempt $(attempt + 1) failed: $e")
+            sleep(delay)  # Wait for some time before retrying
+            attempt += 1
+        end
+    end
+    error("All retries failed for URL: $url")
+end
+
 
 function fetch_WB_test_data()
     base_url = "http://api.worldbank.org/v2/country/all/indicator/"
@@ -79,7 +94,7 @@ function fetch_WB_test_data()
             url = string(base_url, indicator, "?date=2021:2021&format=json&per_page=50&page=", page)
 
             # Making the API request
-            response = HTTP.get(url)
+            response = fetch_with_retries(url)
             if response.status != 200
                 error("Failed to fetch data for indicator $indicator: HTTP status $(response.status)")
             end
