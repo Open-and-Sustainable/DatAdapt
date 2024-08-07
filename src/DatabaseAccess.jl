@@ -52,11 +52,12 @@ function create_and_insert_table!(df::DataFrame, con::DuckDB.DB, table_name::Str
         # Add more mappings as needed
     )
 
-    # Construct the CREATE TABLE statement
+    # Construct the CREATE TABLE statement with quoted column names
     columns_sql = String[]
     for (name, col_type) in zip(column_names, column_types)
+        quoted_name = "\"" * name * "\""  # Quote the column name
         sql_type = get(type_map, col_type, "STRING")  # Default to STRING if type is not mapped
-        push!(columns_sql, "$name $sql_type")
+        push!(columns_sql, "$quoted_name $sql_type")
     end
     create_table_sql = "CREATE TABLE IF NOT EXISTS $table_name ($(join(columns_sql, ", ")))"
     DBInterface.execute(con, create_table_sql)
