@@ -32,6 +32,12 @@ function fetch_damage_data()
     DatabaseAccess.write_duckdb_table!(D_data, db_path, "damage")
 end
 
+function fetch_hazard_data()
+    db_path = "data/raw/DatAdapt_1980-2021.duckdb"
+    H_data = HazardDataFetch.fetch_hazard_data(1980, 2021)
+    DatabaseAccess.write_duckdb_table!(H_data, db_path, "hazard")
+end
+
 function clean_data(df::DataFrame)
     return DataCleaning.clean_data(df)
 end
