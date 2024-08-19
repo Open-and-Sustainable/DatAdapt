@@ -65,6 +65,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
                     # Check the year of every entry before filtering
                     years = unique(year.(df[!, "DATE"]))
                     println("Unique years in $file: $years")
+                    println("Filtering for years between $start_year and $end_year")
 
                     # Apply the filtering based on the year
                     filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
@@ -72,8 +73,9 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
                     # Remove rows where all entries are missing
                     dropmissing!(df)
 
-                    # Add debugging output to inspect DataFrame state
-                    println("Processed DataFrame has $(nrow(df)) rows and $(ncol(df)) columns")
+                    # Inspect DataFrame state
+                    println("Processed DataFrame has $(nrow(df)) rows and $(ncol(df)) columns after filtering")
+                    println("Columns: ", names(df))
 
                     if nrow(df) > 0
                         push!(data_frames, df)
@@ -89,8 +91,15 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         end
     end
     
+    # Inspect the state of all DataFrames before concatenation
     if !isempty(data_frames)
-        align_columns!(data_frames)
+        println("Concatenating $(length(data_frames)) DataFrames...")
+        for (i, df) in enumerate(data_frames)
+            println("DataFrame $i: $(nrow(df)) rows, $(ncol(df)) columns")
+            println("Columns: ", names(df))
+        end
+
+        align_columns!(data_frames)  # Ensure columns are aligned
         combined_df = vcat(data_frames...; cols=:union)
         
         # Remove any rows that are completely empty or contain only missing values
