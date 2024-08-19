@@ -69,6 +69,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
                     dropmissing!(df)
 
                     println("Processed DataFrame has $(nrow(df)) rows and $(ncol(df)) columns after filtering")
+                    df
                     println("Columns: ", names(df))
 
                     if nrow(df) > 0
