@@ -46,14 +46,44 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         println("Decompression and extraction complete.")
     end
 
-    # Load data from the extracted files
+    # Process the files in batches
     println("Loading data from extracted files...")
-    data_frames = DataFrame[]
+    combined_df = DataFrame()
     files = readdir(extraction_dir, join=true)
 
-    # Limit the number of files to a specified limit
-    files = first(files, 10000)
-        
+    batch_size = 10000
+    num_batches = div(length(files), batch_size) + 1
+
+    for batch_num in 1:num_batches
+        start_idx = (batch_num - 1) * batch_size + 1
+        end_idx = min(batch_num * batch_size, length(files))
+        files_batch = files[start_idx:end_idx]
+
+        println("Processing batch $batch_num of $num_batches...")
+        data_frames = process_file_batch(files_batch, start_year, end_year)
+
+        if !isempty(data_frames)
+            align_columns!(data_frames)
+            batch_combined_df = vcat(data_frames...; cols=:union)
+            combined_df = vcat(combined_df, batch_combined_df; cols=:union)
+        end
+
+        println("After batch $batch_num: Combined DataFrame has $(nrow(combined_df)) rows and $(ncol(combined_df)) columns.")
+    end
+
+    if !isempty(combined_df)
+        dropmissing!(combined_df)
+        println("Data loading complete. Final Combined DataFrame has $(nrow(combined_df)) rows and $(ncol(combined_df)) columns.")
+        return combined_df
+    else
+        println("No data to combine.")
+        return DataFrame()
+    end
+end
+
+function process_file_batch(files::Vector{String}, start_year::Int, end_year::Int)
+    data_frames = DataFrame[]
+
     for file in files
         if endswith(file, ".csv")
             println("Processing $file...")
@@ -78,23 +108,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         end
     end
     
-    if !isempty(data_frames)
-        println("Aligning columns across $(length(data_frames)) DataFrames...")
-        align_columns!(data_frames)  # Ensure columns are aligned
-
-        # Perform concatenation
-        combined_df = vcat(data_frames...; cols=:union)
-
-        # Remove any rows that are completely empty or contain only missing values
-        dropmissing!(combined_df)
-
-        println("Data loading complete. Combined DataFrame has $(nrow(combined_df)) rows and $(ncol(combined_df)) columns.")
-        #println("Columns in combined DataFrame: ", names(combined_df))
-        return combined_df
-    else
-        println("No data to combine.")
-        return DataFrame()
-    end
+    return data_frames
 end
 
 function align_columns!(dfs::Vector{DataFrame})
@@ -110,5 +124,7 @@ function align_columns!(dfs::Vector{DataFrame})
         end
     end
 end
+
+
 
 end
