@@ -110,7 +110,7 @@ function align_columns!(dfs::Vector{DataFrame})
         println("Types: ", eltype.(eachcol(df)))
         
         for col in all_columns
-            if !(Symbol(col) in names(df))
+            if !(col in names(df))
                 df[!, Symbol(col)] = fill(missing, nrow(df))
             end
         end
