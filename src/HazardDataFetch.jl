@@ -100,7 +100,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         combined_df = vcat(data_frames...; cols=:union)
 
         # Remove any rows that are completely empty or contain only missing values
-        dropmissing!(combined_df, :all)
+        dropmissing!(combined_df)
 
         println("Data loading complete. Combined DataFrame has $(nrow(combined_df)) rows and $(ncol(combined_df)) columns.")
         println("Columns in combined DataFrame: ", names(combined_df))
