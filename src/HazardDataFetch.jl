@@ -65,7 +65,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
                     filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
 
                     # Remove rows where all entries are missing
-                    dropmissing!(df, :all)
+                    dropmissing!(df)
 
                     if nrow(df) > 0
                         push!(data_frames, df)
