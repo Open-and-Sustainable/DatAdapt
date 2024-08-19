@@ -51,18 +51,16 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     data_frames = DataFrame[]
     files = readdir(extraction_dir, join=true)
 
+    # Limit the number of files to the specified file_limit
+    files = first(files, 1000)
+        
     for file in files
         if endswith(file, ".csv")
             println("Processing $file...")
             try
-                # Read the CSV file into a DataFrame
                 df = CSV.read(file, DataFrame)
-    
-                # Skip conversion since DATE is already a Dates.Date
-                # Directly proceed to filtering
                 filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
-    
-                # If the DataFrame has data, add it to the list
+                
                 if nrow(df) > 0
                     push!(data_frames, df)
                 end
@@ -72,16 +70,27 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         end
     end
     
-    
-    # Combine all DataFrames into one
     if !isempty(data_frames)
-        combined_df = vcat(data_frames...)
+        align_columns!(data_frames)
+        combined_df = vcat(data_frames...; cols=:union)
         println("Data loading complete. Combined DataFrame has $(nrow(combined_df)) rows.")
         return combined_df
     else
         println("No data to combine.")
         return DataFrame()
     end
- end
+end
+
+
+function align_columns!(dfs::Vector{DataFrame})
+    all_columns = unique(vcat([names(df) for df in dfs]...))
+    for df in dfs
+        for col in all_columns
+            if !haskey(df, col)
+                df[!, col] = missing
+            end
+        end
+    end
+end
 
 end
