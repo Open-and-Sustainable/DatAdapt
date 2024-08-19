@@ -7,11 +7,13 @@ using DataFrames
 include("DatabaseAccess.jl")
 include("ExposureDataFetch.jl")
 include("DamageDataFetch.jl")
+include("HazardDataFetch.jl")
 #include("DataCleaning.jl")
 
 using .DatabaseAccess
 using .ExposureDataFetch
 using .DamageDataFetch
+using .HazardDataFetch
 
 #using .DataCleaning
 
