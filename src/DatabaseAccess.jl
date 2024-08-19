@@ -36,15 +36,22 @@ function sql_value(value)::String
     end
 end
 
-function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
+function create_and_load_table_with_copy!(df::DataFrame, con::DuckDB.DB, table_name::String)
     # Drop the table if it exists
     DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
 
     # Create the table with explicit types
     create_table_with_types!(df, con, table_name)
 
-    # Bulk load the DataFrame into the table
-    DBInterface.load!(df, con, table_name)
+    # Write DataFrame to a temporary CSV file
+    temp_csv_path = "data/raw/temp_data.csv"
+    CSV.write(temp_csv_path, df)
+
+    # Load data from the CSV file using COPY
+    DBInterface.execute(con, "COPY $table_name FROM '$temp_csv_path' (FORMAT CSV, HEADER TRUE)")
+
+    # Remove the temporary CSV file
+    rm(temp_csv_path)
 end
 
 function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
