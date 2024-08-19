@@ -3,6 +3,7 @@ module DatabaseAccess
 using DuckDB
 using DataFrames
 using Dates
+using CSV
 
 export write_duckdb_table
 
