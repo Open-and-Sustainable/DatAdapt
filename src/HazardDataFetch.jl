@@ -51,7 +51,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     data_frames = DataFrame[]
     files = readdir(extraction_dir, join=true)
 
-    # Limit the number of files to the specified file_limit
+    # Limit the number of files to a specified limit
     files = first(files, 1000)
         
     for file in files
@@ -86,8 +86,8 @@ function align_columns!(dfs::Vector{DataFrame})
     all_columns = unique(vcat([names(df) for df in dfs]...))
     for df in dfs
         for col in all_columns
-            if !(col in names(df))
-                df[!, col] = missing
+            if !(Symbol(col) in names(df))
+                df[!, Symbol(col)] = missing
             end
         end
     end
