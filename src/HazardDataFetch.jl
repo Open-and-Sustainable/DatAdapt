@@ -52,7 +52,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     files = readdir(extraction_dir, join=true)
 
     # Limit the number of files to a specified limit
-    files = first(files, 1000)
+    files = first(files, 10)
         
     for file in files
         if endswith(file, ".csv")
@@ -62,13 +62,23 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
                 
                 # Ensure that the DATE column exists and is a valid date
                 if "DATE" in names(df)
+                    # Check the year of every entry before filtering
+                    years = unique(year.(df[!, "DATE"]))
+                    println("Unique years in $file: $years")
+
+                    # Apply the filtering based on the year
                     filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
 
                     # Remove rows where all entries are missing
                     dropmissing!(df)
 
+                    # Add debugging output to inspect DataFrame state
+                    println("Processed DataFrame has $(nrow(df)) rows and $(ncol(df)) columns")
+
                     if nrow(df) > 0
                         push!(data_frames, df)
+                    else
+                        println("DataFrame from $file is empty after filtering.")
                     end
                 else
                     println("Skipping $file: 'DATE' column not found.")
