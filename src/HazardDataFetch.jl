@@ -52,7 +52,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     files = readdir(extraction_dir, join=true)
 
     # Limit the number of files to a specified limit
-    #files = first(files, 1000)
+    files = first(files, 10000)
         
     for file in files
         if endswith(file, ".csv")
