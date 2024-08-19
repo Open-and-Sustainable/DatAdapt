@@ -40,8 +40,8 @@ function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::Strin
     # Drop the table if it exists
     DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
 
-    # Create the table based on DataFrame schema
-    DBInterface.execute(con, "CREATE TABLE $table_name AS SELECT * FROM df LIMIT 0")
+    # Create the table with explicit types
+    create_table_with_types!(df, con, table_name)
 
     # Bulk load the DataFrame into the table
     DBInterface.load!(df, con, table_name)
@@ -51,11 +51,38 @@ function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
     # Create or connect to the DuckDB database
     con = DuckDB.DB(db_path)
     
-    # Create the table and load data
+    # Create the table with types and load data
     create_and_load_table!(df, con, table_name)
     
     # Close the connection
     DBInterface.close!(con)
+end
+
+function create_table_with_types!(df::DataFrame, con::DuckDB.DB, table_name::String)
+    # Determine the column names and types
+    column_names = names(df)
+    column_types = eltype.(eachcol(df))
+
+    # Map Julia types to SQL types
+    type_map = Dict(
+        Int => "INTEGER",
+        Float64 => "DOUBLE",
+        String => "STRING",
+        Bool => "BOOLEAN",
+        Dates.Date => "DATE",
+        Dates.DateTime => "TIMESTAMP"
+        # Add more mappings as needed
+    )
+
+    # Construct the CREATE TABLE statement with quoted column names and SQL types
+    columns_sql = String[]
+    for (name, col_type) in zip(column_names, column_types)
+        quoted_name = "\"" * name * "\""  # Quote the column name
+        sql_type = get(type_map, col_type, "STRING")  # Default to STRING if type is not mapped
+        push!(columns_sql, "$quoted_name $sql_type")
+    end
+    create_table_sql = "CREATE TABLE $table_name ($(join(columns_sql, ", ")))"
+    DBInterface.execute(con, create_table_sql)
 end
 
 end # module DatabaseAccess
