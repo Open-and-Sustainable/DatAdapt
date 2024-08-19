@@ -59,10 +59,19 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
             println("Processing $file...")
             try
                 df = CSV.read(file, DataFrame)
-                filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
                 
-                if nrow(df) > 0
-                    push!(data_frames, df)
+                # Ensure that the DATE column exists and is a valid date
+                if "DATE" in names(df)
+                    filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
+
+                    # Remove rows where all entries are missing
+                    dropmissing!(df, :all)
+
+                    if nrow(df) > 0
+                        push!(data_frames, df)
+                    end
+                else
+                    println("Skipping $file: 'DATE' column not found.")
                 end
             catch e
                 println("Error processing $file: $e")
@@ -73,6 +82,10 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     if !isempty(data_frames)
         align_columns!(data_frames)
         combined_df = vcat(data_frames...; cols=:union)
+        
+        # Remove any rows that are completely empty or contain only missing values
+        dropmissing!(combined_df, :all)
+        
         println("Data loading complete. Combined DataFrame has $(nrow(combined_df)) rows.")
         return combined_df
     else
