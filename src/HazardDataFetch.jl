@@ -52,7 +52,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     files = readdir(extraction_dir, join=true)
 
     # Limit the number of files to a specified limit
-    files = first(files, 10)
+    files = first(files, 1000)
         
     for file in files
         if endswith(file, ".csv")
@@ -103,23 +103,12 @@ function align_columns!(dfs::Vector{DataFrame})
     println("All columns across all DataFrames: ", all_columns)
 
     for (i, df) in enumerate(dfs)
-        println("Aligning DataFrame $i: before alignment")
-        println("Columns: ", names(df))
-        println("First few rows: ")
-        println(first(df, 5))
-        println("Types: ", eltype.(eachcol(df)))
-        
+        # Add missing columns if needed       
         for col in all_columns
             if !(col in names(df))
                 df[!, Symbol(col)] = fill(missing, nrow(df))
             end
         end
-
-        println("Aligning DataFrame $i: after alignment")
-        println("Columns: ", names(df))
-        println("First few rows: ")
-        println(first(df, 5))
-        println("Types: ", eltype.(eachcol(df)))
     end
 end
 
