@@ -36,7 +36,7 @@ function sql_value(value)::String
     end
 end
 
-function create_and_load_table_with_copy!(df::DataFrame, con::DuckDB.DB, table_name::String)
+function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
     # Drop the table if it exists
     DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
 
