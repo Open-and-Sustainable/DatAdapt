@@ -61,16 +61,8 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
                 df = CSV.read(file, DataFrame)
                 
                 if "DATE" in names(df)
-                    years = unique(year.(df[!, "DATE"]))
-                    println("Unique years in $file: $years")
-                    println("Filtering for years between $start_year and $end_year")
-
                     filter!(row -> start_year <= year(row["DATE"]) <= end_year, df)
                     dropmissing!(df)
-
-                    println("Processed DataFrame has $(nrow(df)) rows and $(ncol(df)) columns after filtering")
-                    println(df)
-                    println("Columns: ", names(df))
 
                     if nrow(df) > 0
                         push!(data_frames, df)
@@ -90,13 +82,6 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         println("Aligning columns across $(length(data_frames)) DataFrames...")
         align_columns!(data_frames)  # Ensure columns are aligned
 
-        # Debugging output: Check the structure of each DataFrame
-        for (i, df) in enumerate(data_frames)
-            println("DataFrame $i: $(nrow(df)) rows, $(ncol(df)) columns")
-            println("Columns: ", names(df))
-            println("Types: ", eltype.(eachcol(df)))
-        end
-
         # Perform concatenation
         combined_df = vcat(data_frames...; cols=:union)
 
@@ -104,7 +89,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
         dropmissing!(combined_df)
 
         println("Data loading complete. Combined DataFrame has $(nrow(combined_df)) rows and $(ncol(combined_df)) columns.")
-        println("Columns in combined DataFrame: ", names(combined_df))
+        #println("Columns in combined DataFrame: ", names(combined_df))
         return combined_df
     else
         println("No data to combine.")
@@ -113,13 +98,28 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
 end
 
 function align_columns!(dfs::Vector{DataFrame})
+    # Collect all unique columns across all DataFrames
     all_columns = unique(vcat([names(df) for df in dfs]...))
-    for df in dfs
+    println("All columns across all DataFrames: ", all_columns)
+
+    for (i, df) in enumerate(dfs)
+        println("Aligning DataFrame $i: before alignment")
+        println("Columns: ", names(df))
+        println("First few rows: ")
+        println(first(df, 5))
+        println("Types: ", eltype.(eachcol(df)))
+        
         for col in all_columns
             if !(Symbol(col) in names(df))
                 df[!, Symbol(col)] = fill(missing, nrow(df))
             end
         end
+
+        println("Aligning DataFrame $i: after alignment")
+        println("Columns: ", names(df))
+        println("First few rows: ")
+        println(first(df, 5))
+        println("Types: ", eltype.(eachcol(df)))
     end
 end
 
