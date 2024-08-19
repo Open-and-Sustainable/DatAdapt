@@ -81,13 +81,12 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     end
 end
 
-
 function align_columns!(dfs::Vector{DataFrame})
     all_columns = unique(vcat([names(df) for df in dfs]...))
     for df in dfs
         for col in all_columns
             if !(Symbol(col) in names(df))
-                df[!, Symbol(col)] = missing
+                df[!, Symbol(col)] = fill(missing, nrow(df))
             end
         end
     end
