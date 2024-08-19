@@ -36,51 +36,24 @@ function sql_value(value)::String
     end
 end
 
-function create_and_insert_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
-    # Determine the column names and types
-    column_names = names(df)
-    column_types = eltype.(eachcol(df))
+function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
+    # Drop the table if it exists
+    DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
 
-    # Map Julia types to SQL types
-    type_map = Dict(
-        Int => "INTEGER",
-        Float64 => "DOUBLE",
-        String => "STRING",
-        Bool => "BOOLEAN",
-        Dates.Date => "DATE",
-        Dates.DateTime => "TIMESTAMP"
-        # Add more mappings as needed
-    )
+    # Create the table based on DataFrame schema
+    DBInterface.execute(con, "CREATE TABLE $table_name AS SELECT * FROM df LIMIT 0")
 
-    # Construct the CREATE TABLE statement with quoted column names
-    columns_sql = String[]
-    for (name, col_type) in zip(column_names, column_types)
-        quoted_name = "\"" * name * "\""  # Quote the column name
-        sql_type = get(type_map, col_type, "STRING")  # Default to STRING if type is not mapped
-        push!(columns_sql, "$quoted_name $sql_type")
-    end
-    create_table_sql = "CREATE TABLE IF NOT EXISTS $table_name ($(join(columns_sql, ", ")))"
-    DBInterface.execute(con, create_table_sql)
-
-    # Insert data into the table
-    for row in eachrow(df)
-        values_sql = String[]
-        for (name, _) in zip(column_names, column_types)
-            value = row[name]
-            push!(values_sql, sql_value(value))
-        end
-        insert_sql = "INSERT INTO $table_name VALUES ($(join(values_sql, ", ")))"
-        DBInterface.execute(con, insert_sql)
-    end
+    # Bulk load the DataFrame into the table
+    DBInterface.load!(df, con, table_name)
 end
 
 function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
     # Create or connect to the DuckDB database
-    con = create_or_connect_duckdb(db_path)
-    # Drop the table if it exists
-    DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
-    # create a new one with the DataFrame data
-    create_and_insert_table!(df, con, table_name)
+    con = DuckDB.DB(db_path)
+    
+    # Create the table and load data
+    create_and_load_table!(df, con, table_name)
+    
     # Close the connection
     DBInterface.close!(con)
 end
