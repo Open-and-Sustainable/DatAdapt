@@ -114,13 +114,11 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
 end
 
 function align_columns!(dfs::Vector{DataFrame})
-    # Collect all unique columns across all DataFrames
-    all_columns = unique(vcat(names.(dfs)...))
-    
+    all_columns = unique(vcat([names(df) for df in dfs]...))
     for df in dfs
         for col in all_columns
-            if !haskey(df, col)
-                df[!, col] = missing
+            if !(Symbol(col) in names(df))
+                df[!, Symbol(col)] = fill(missing, nrow(df))
             end
         end
     end
