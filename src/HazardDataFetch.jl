@@ -52,7 +52,7 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     files = readdir(extraction_dir, join=true)
 
     # Limit the number of files to a specified limit
-    files = first(files, 1000)
+    #files = first(files, 1000)
         
     for file in files
         if endswith(file, ".csv")
@@ -100,7 +100,6 @@ end
 function align_columns!(dfs::Vector{DataFrame})
     # Collect all unique columns across all DataFrames
     all_columns = unique(vcat([names(df) for df in dfs]...))
-    println("All columns across all DataFrames: ", all_columns)
 
     for (i, df) in enumerate(dfs)
         # Add missing columns if needed       
