@@ -72,8 +72,6 @@ function fetch_hazard_data(start_year::Int, end_year::Int)
     end
 
     if !isempty(combined_df)
-        dropmissing!(combined_df)
-        println("Data loading complete. Final Combined DataFrame has $(nrow(combined_df)) rows and $(ncol(combined_df)) columns.")
         return combined_df
     else
         println("No data to combine.")
