@@ -3,13 +3,14 @@ module DatabaseAccess
 using DuckDB
 using DataFrames
 using Dates
+using CSV
 
-export write_duckdb_table
+export write_duckdb_table, executePRQL
 
-function create_or_connect_duckdb(db_path::String)
+#function create_or_connect_duckdb(db_path::String)
     # Open a DuckDB connection (this creates the database if it doesn't exist)
-    return DBInterface.connect(DuckDB.DB, db_path)
-end
+#    return DBInterface.connect(DuckDB.DB, db_path)
+#end
 
 function escape_sql_string(value::String)::String
     # Manually escape single quotes by doubling them
@@ -36,7 +37,36 @@ function sql_value(value)::String
     end
 end
 
-function create_and_insert_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
+function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
+    # Drop the table if it exists
+    DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
+
+    # Create the table with explicit types
+    create_table_with_types!(df, con, table_name)
+
+    # Write DataFrame to a temporary CSV file
+    temp_csv_path = "data/raw/temp_data.csv"
+    CSV.write(temp_csv_path, df)
+
+    # Load data from the CSV file using COPY
+    DBInterface.execute(con, "COPY $table_name FROM '$temp_csv_path' (FORMAT CSV, HEADER TRUE)")
+
+    # Remove the temporary CSV file
+    rm(temp_csv_path)
+end
+
+function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
+    # Create or connect to the DuckDB database
+    con = DuckDB.DB(db_path)
+    
+    # Create the table with types and load data
+    create_and_load_table!(df, con, table_name)
+    
+    # Close the connection
+    DBInterface.close!(con)
+end
+
+function create_table_with_types!(df::DataFrame, con::DuckDB.DB, table_name::String)
     # Determine the column names and types
     column_names = names(df)
     column_types = eltype.(eachcol(df))
@@ -52,37 +82,60 @@ function create_and_insert_table!(df::DataFrame, con::DuckDB.DB, table_name::Str
         # Add more mappings as needed
     )
 
-    # Construct the CREATE TABLE statement with quoted column names
+    # Construct the CREATE TABLE statement with quoted column names and SQL types
     columns_sql = String[]
     for (name, col_type) in zip(column_names, column_types)
         quoted_name = "\"" * name * "\""  # Quote the column name
         sql_type = get(type_map, col_type, "STRING")  # Default to STRING if type is not mapped
         push!(columns_sql, "$quoted_name $sql_type")
     end
-    create_table_sql = "CREATE TABLE IF NOT EXISTS $table_name ($(join(columns_sql, ", ")))"
+    create_table_sql = "CREATE TABLE $table_name ($(join(columns_sql, ", ")))"
     DBInterface.execute(con, create_table_sql)
+end
 
-    # Insert data into the table
-    for row in eachrow(df)
-        values_sql = String[]
-        for (name, _) in zip(column_names, column_types)
-            value = row[name]
-            push!(values_sql, sql_value(value))
+function installPRQL_DuckDBextension()
+    con = DuckDB.DB()
+    try
+        result = DuckDB.execute(con, "INSTALL 'prql' FROM community;")
+        
+        # Check if the installation was successful
+        if isempty(result.Success) || all(result.Success)
+            println("PRQL extension installed successfully.")
+        else
+            println("PRQL extension installation failed.")
         end
-        insert_sql = "INSERT INTO $table_name VALUES ($(join(values_sql, ", ")))"
-        DBInterface.execute(con, insert_sql)
+    catch e
+        println("Error during PRQL extension installation: ", e)
+    finally
+        DBInterface.close!(con)
     end
 end
 
-function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
-    # Create or connect to the DuckDB database
-    con = create_or_connect_duckdb(db_path)
-    # Drop the table if it exists
-    DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
-    # create a new one with the DataFrame data
-    create_and_insert_table!(df, con, table_name)
-    # Close the connection
-    DBInterface.close!(con)
+function executePRQL(dbpath::String, prqlpath::String)::DataFrame
+    # Create a connection to the DuckDB database
+    con = DuckDB.DB(dbpath)
+    
+    try
+        # Load the PRQL extension
+        DuckDB.execute(con, "LOAD 'prql';")
+        
+        # Read the PRQL code from the file
+        prql_query = read(prqlpath, String)
+        
+        # Execute the PRQL query and capture the result
+        result_df = DataFrame(DuckDB.query(con, prql_query))
+        
+        # Return the resulting DataFrame
+        return result_df
+    catch e
+        # Handle any errors that occur during the process
+        println("Error during execution: ", e)
+        return DataFrame()  # Return an empty DataFrame in case of error
+    finally
+        # Ensure the database connection is closed
+        DBInterface.close!(con)
+    end
 end
+
 
 end # module DatabaseAccess
