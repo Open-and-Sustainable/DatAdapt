@@ -8,17 +8,15 @@ include("DatabaseAccess.jl")
 include("ExposureDataFetch.jl")
 include("DamageDataFetch.jl")
 include("HazardDataFetch.jl")
-#include("DataCleaning.jl")
+include("DataTransform.jl")
 
 using .DatabaseAccess
 using .ExposureDataFetch
 using .DamageDataFetch
 using .HazardDataFetch
+using .DataTransform
 
-#using .DataCleaning
-
-
-export fetch_exposure_data, fetch_damage_data
+#export fetch_exposure_data, fetch_damage_data, fetch_hazard_data
 
 function fetch_exposure_data()
     # wb_test_data = DataFetch.fetch_WB_test_data()
@@ -40,16 +38,17 @@ function fetch_hazard_data()
     DatabaseAccess.write_duckdb_table!(H_data, db_path, "hazard")
 end
 
-function clean_data(df::DataFrame)
-    return DataCleaning.clean_data(df)
+function fetch_baseline_hazard_data()
+    db_path = "data/raw/DatAdapt_1980-2021.duckdb"
+    H_BL_data = HazardDataFetch.fetch_hazard_data(1930, 1979)
+    DatabaseAccess.write_duckdb_table!(H_BL_data, db_path, "hazard_baseline")
 end
 
-function transform_data(df::DataFrame)
-    return DataCleaning.transform_data(df)
+function transform_data(table::String)
+    db_path_in = "data/raw/DatAdapt_1980-2021.duckdb"
+    db_path_out = "data/processed/DatAdapt_1980-2021.duckdb"
+    
 end
 
-function setup_database()
-    DatabaseSetup.setup()
-end
 
 end # module DatAdapt

@@ -5,12 +5,12 @@ using DataFrames
 using Dates
 using CSV
 
-export write_duckdb_table
+export write_duckdb_table, executePRQL
 
-function create_or_connect_duckdb(db_path::String)
+#function create_or_connect_duckdb(db_path::String)
     # Open a DuckDB connection (this creates the database if it doesn't exist)
-    return DBInterface.connect(DuckDB.DB, db_path)
-end
+#    return DBInterface.connect(DuckDB.DB, db_path)
+#end
 
 function escape_sql_string(value::String)::String
     # Manually escape single quotes by doubling them
@@ -92,5 +92,50 @@ function create_table_with_types!(df::DataFrame, con::DuckDB.DB, table_name::Str
     create_table_sql = "CREATE TABLE $table_name ($(join(columns_sql, ", ")))"
     DBInterface.execute(con, create_table_sql)
 end
+
+function installPRQL_DuckDBextension()
+    con = DuckDB.DB()
+    try
+        result = DuckDB.execute(con, "INSTALL 'prql' FROM community;")
+        
+        # Check if the installation was successful
+        if isempty(result.Success) || all(result.Success)
+            println("PRQL extension installed successfully.")
+        else
+            println("PRQL extension installation failed.")
+        end
+    catch e
+        println("Error during PRQL extension installation: ", e)
+    finally
+        DBInterface.close!(con)
+    end
+end
+
+function executePRQL(dbpath::String, prqlpath::String)::DataFrame
+    # Create a connection to the DuckDB database
+    con = DuckDB.DB(dbpath)
+    
+    try
+        # Load the PRQL extension
+        DuckDB.execute(con, "LOAD 'prql';")
+        
+        # Read the PRQL code from the file
+        prql_query = read(prqlpath, String)
+        
+        # Execute the PRQL query and capture the result
+        result_df = DataFrame(DuckDB.query(con, prql_query))
+        
+        # Return the resulting DataFrame
+        return result_df
+    catch e
+        # Handle any errors that occur during the process
+        println("Error during execution: ", e)
+        return DataFrame()  # Return an empty DataFrame in case of error
+    finally
+        # Ensure the database connection is closed
+        DBInterface.close!(con)
+    end
+end
+
 
 end # module DatabaseAccess
