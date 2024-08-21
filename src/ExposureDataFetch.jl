@@ -7,7 +7,7 @@ using DataFrames
 export fetch_exposure_data
 
 function fetch_exposure_data(start_year::Int, end_year::Int)
-    base_url = "http://api.worldbank.org/v2/country/all/indicator/"
+    base_url = "https://api.worldbank.org/v2/country/all/indicator/"
     indicators = [
         "SP.POP.TOTL",         # Population, total
         "AG.SRF.TOTL.K2",      # Surface area (sq. km)
