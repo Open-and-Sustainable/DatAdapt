@@ -44,6 +44,9 @@ function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::Strin
     # Create the table with explicit types
     create_table_with_types!(df, con, table_name)
 
+    # Replace `nothing` with `missing`
+    replace!(df, nothing => missing)
+
     # Write DataFrame to a temporary CSV file
     temp_csv_path = "DatAdapt-database/raw/temp_data.csv"
     CSV.write(temp_csv_path, df)
