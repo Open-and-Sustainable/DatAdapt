@@ -1,0 +1,16 @@
+from damage
+group [ISO, `Disaster Type`, `Start Year`] (
+  aggregate [
+    record_count = count(),
+    country = first Country,
+    subregion = first Subregion,
+    region = first Region,
+    cpi = first CPI,
+    total_deaths = sum `Total Deaths`,
+    total_injured = sum `No. Injured`,
+    total_affected = sum `No. Affected`,
+    total_homeless = sum `No. Homeless`,
+    total_damage = sum `"Total Damage ('000 US$)"`,
+    total_damage_adjusted = sum `"Total Damage, Adjusted ('000 US$)"`
+  ]
+)
