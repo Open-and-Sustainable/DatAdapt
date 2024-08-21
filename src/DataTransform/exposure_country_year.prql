@@ -1,0 +1,24 @@
+from exposure
+derive {
+  country_code = `country_code`,
+  year = `year`,
+  population_total = s"MAX(CASE WHEN indicator = 'SP.POP.TOTL' THEN value END)",
+  surface_area_sq_km = s"MAX(CASE WHEN indicator = 'AG.SRF.TOTL.K2' THEN value END)",
+  population_density = s"MAX(CASE WHEN indicator = 'EN.POP.DNST' THEN value END)",
+  gdp_current_usd = s"MAX(CASE WHEN indicator = 'NY.GDP.MKTP.CD' THEN value END)",
+  gdp_growth_annual_percent = s"MAX(CASE WHEN indicator = 'NY.GDP.MKTP.KD.ZG' THEN value END)",
+  gni_per_capita_atlas_usd = s"MAX(CASE WHEN indicator = 'NY.GNP.PCAP.CD' THEN value END)",
+  gni_per_capita_ppp_usd = s"MAX(CASE WHEN indicator = 'NY.GNP.PCAP.PP.CD' THEN value END)"
+}
+group {country_code, year}
+select {
+  country_code,
+  year,
+  population_total,
+  surface_area_sq_km,
+  population_density,
+  gdp_current_usd,
+  gdp_growth_annual_percent,
+  gni_per_capita_atlas_usd,
+  gni_per_capita_ppp_usd
+}
