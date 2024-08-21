@@ -45,7 +45,7 @@ function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::Strin
     create_table_with_types!(df, con, table_name)
 
     # Write DataFrame to a temporary CSV file
-    temp_csv_path = "data/raw/temp_data.csv"
+    temp_csv_path = "DatAdapt-database/raw/temp_data.csv"
     CSV.write(temp_csv_path, df)
 
     # Load data from the CSV file using COPY
@@ -96,14 +96,11 @@ end
 function installPRQL_DuckDBextension()
     con = DuckDB.DB()
     try
-        result = DuckDB.execute(con, "INSTALL 'prql' FROM community;")
+        # Attempt to install the PRQL extension
+        DuckDB.execute(con, "INSTALL 'prql' FROM community;")
+        DuckDB.execute(con, "LOAD 'prql';")
         
-        # Check if the installation was successful
-        if isempty(result.Success) || all(result.Success)
-            println("PRQL extension installed successfully.")
-        else
-            println("PRQL extension installation failed.")
-        end
+        println("PRQL extension installed and loaded successfully.")
     catch e
         println("Error during PRQL extension installation: ", e)
     finally

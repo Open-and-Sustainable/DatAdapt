@@ -42,15 +42,15 @@ end
 function transform_data(table::String)
     if table == "damage"
         # Process the "damage" table
-        D_processed = DatabaseAccess.executePRQL(DB_PATH_RAW, "DataTransform/damage_country_event_year.prql")
+        D_processed = DatabaseAccess.executePRQL(DB_PATH_RAW, "src/DataTransform/damage_country_event_year.prql")
         DatabaseAccess.write_duckdb_table!(D_processed, DB_PATH_PROCESSED, "damage_country_event_year")
     elseif table == "exposure"
         # Process the "exposure" table
-        E_processed = DatabaseAccess.executePRQL(DB_PATH_RAW, "DataTransform/exposure_transform.prql")
+        E_processed = DatabaseAccess.executePRQL(DB_PATH_RAW, "src/DataTransform/exposure_transform.prql")
         DatabaseAccess.write_duckdb_table!(E_processed, DB_PATH_PROCESSED, "exposure_processed")
     elseif table == "hazard"
         # Process the "hazard" table
-        H_processed = DatabaseAccess.executePRQL(DB_PATH_RAW, "DataTransform/hazard_transform.prql")
+        H_processed = DatabaseAccess.executePRQL(DB_PATH_RAW, "src/DataTransform/hazard_transform.prql")
         DatabaseAccess.write_duckdb_table!(H_processed, DB_PATH_PROCESSED, "hazard_processed")
     else
         println("Table name not recognized. Please provide a valid table name.")
