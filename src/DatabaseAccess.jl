@@ -57,6 +57,10 @@ function create_and_load_table_directly!(df::DataFrame, con::DuckDB.DB, table_na
     # Create the table with explicit types
     create_table_with_types!(df, con, table_name)
 
+    # Determine the column names and types
+    column_names = names(df)
+    column_types = eltype.(eachcol(df))
+
     # Insert data into the table
     for row in eachrow(df)
         values_sql = String[]
