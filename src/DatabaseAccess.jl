@@ -5,12 +5,7 @@ using DataFrames
 using Dates
 using CSV
 
-export write_duckdb_table, executePRQL
-
-#function create_or_connect_duckdb(db_path::String)
-    # Open a DuckDB connection (this creates the database if it doesn't exist)
-#    return DBInterface.connect(DuckDB.DB, db_path)
-#end
+export write_duckdb_table, write_large_duckdb_table, executePRQL
 
 function escape_sql_string(value::String)::String
     # Manually escape single quotes by doubling them
@@ -37,17 +32,12 @@ function sql_value(value)::String
     end
 end
 
-function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::String)
+function create_and_load_table_throughCSV!(df::DataFrame, con::DuckDB.DB, table_name::String)
     # Drop the table if it exists
     DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
 
     # Create the table with explicit types
     create_table_with_types!(df, con, table_name)
-
-    # Replace `nothing` with `missing`
-    for col in names(df)
-        replace!(df[!, col], nothing => missing)
-    end
 
     # Write DataFrame to a temporary CSV file
     temp_csv_path = "DatAdapt-database/raw/temp_data.csv"
@@ -60,12 +50,43 @@ function create_and_load_table!(df::DataFrame, con::DuckDB.DB, table_name::Strin
     rm(temp_csv_path)
 end
 
+function create_and_load_table_directly!(df::DataFrame, con::DuckDB.DB, table_name::String)
+    # Drop the table if it exists
+    DBInterface.execute(con, "DROP TABLE IF EXISTS $table_name")
+
+    # Create the table with explicit types
+    create_table_with_types!(df, con, table_name)
+
+    # Insert data into the table
+    for row in eachrow(df)
+        values_sql = String[]
+        for (name, _) in zip(column_names, column_types)
+            value = row[name]
+            push!(values_sql, sql_value(value))
+        end
+        insert_sql = "INSERT INTO $table_name VALUES ($(join(values_sql, ", ")))"
+        DBInterface.execute(con, insert_sql)
+    end
+
+end
+
 function write_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
     # Create or connect to the DuckDB database
     con = DuckDB.DB(db_path)
     
     # Create the table with types and load data
-    create_and_load_table!(df, con, table_name)
+    create_and_load_table_directly!(df, con, table_name)
+    
+    # Close the connection
+    DBInterface.close!(con)
+end
+
+function write_large_duckdb_table!(df::DataFrame, db_path::String, table_name::String)
+    # Create or connect to the DuckDB database
+    con = DuckDB.DB(db_path)
+    
+    # Create the table with types and load data
+    create_and_load_table_throughCSV!(df, con, table_name)
     
     # Close the connection
     DBInterface.close!(con)
