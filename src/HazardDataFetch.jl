@@ -8,6 +8,7 @@ using CodecZlib
 using Dates
 using NCDatasets
 using PyCall
+using Shapefile, LibGEOS, GeoDataFrames
 
 export fetch_hazard_data
 
@@ -70,6 +71,94 @@ function fetch_era5_data(start_year::Int, end_year::Int)
                 result.download(output_file)
 
                 println("Download complete: $output_file")
+
+                # Process the NetCDF file into a DataFrame
+                # Load the NetCDF file
+                dataset = Dataset(output_file)
+
+                # Extract variables
+                t2m = dataset["t2m"][:]  # 2 meter temperature
+                tp = dataset["tp"][:]    # Total precipitation
+                i10fg = dataset["i10fg"][:]  # Instantaneous 10m wind gust
+                pev = dataset["pev"][:]   # Potential evaporation
+                latitude = dataset["latitude"][:]
+                longitude = dataset["longitude"][:]
+                valid_time = dataset["valid_time"][:]  # Time variable
+
+                # Convert time to DateTime format
+                times = DateTime.(valid_time, Dates.DateFormat("yyyy-mm-ddTHH:MM:SS"))
+
+                # Group data by day
+                days = unique(Date.(times))
+
+                # Initialize arrays to hold daily values
+                daily_min_temp = fill(NaN, length(latitude), length(longitude), length(days))
+                daily_max_temp = fill(NaN, length(latitude), length(longitude), length(days))
+                daily_avg_evap = fill(NaN, length(latitude), length(longitude), length(days))
+                daily_max_gusts = fill(NaN, length(latitude), length(longitude), length(days))
+
+                # Loop over each day and calculate daily statistics
+                for day_idx in eachindex(days)
+                    day = days[day_idx]
+                    day_mask = Date.(times) .== day
+
+                    for i in axes(latitude, 1)
+                        for j in axes(longitude, 1)
+                            daily_min_temp[i, j, day_idx] = minimum(t2m[i, j, day_mask])
+                            daily_max_temp[i, j, day_idx] = maximum(t2m[i, j, day_mask])
+                            daily_avg_evap[i, j, day_idx] = mean(pev[i, j, day_mask])
+                            daily_max_gusts[i, j, day_idx] = maximum(i10fg[i, j, day_mask])
+                        end
+                    end
+                end
+
+                # Load shapefile with country boundaries
+                shapefile = Shapefile.Table("DatAdapt-database/raw/World_Countries.shp")
+
+                # Create a GEOS context for point-in-polygon operations
+                context = LibGEOS.Context()
+
+                # Initialize matrix to store country assignments
+                country_assignment = fill("", length(latitude), length(longitude))
+
+                # Assign grid points to countries using axes for indexing
+                for i in axes(latitude, 1)
+                    for j in axes(longitude, 1)
+                        point = Point(longitude[j], latitude[i])
+                        for feature in shapefile
+                            if intersects(point, feature.geometry)
+                                country_assignment[i, j] = feature.properties["ISO_CC"]
+                                break
+                            end
+                        end
+                    end
+                end
+
+                sea_mask = country_assignment .== ""
+
+                # Apply the mask to filter out sea points
+                filtered_min_temp = daily_min_temp[!sea_mask]
+                filtered_max_temp = daily_max_temp[!sea_mask]
+                filtered_avg_evap = daily_avg_evap[!sea_mask]
+                filtered_max_gusts = daily_max_gusts[!sea_mask]
+                filtered_countries = country_assignment[!sea_mask]
+
+                df = DataFrame(
+                    Date = repeat(days, outer=[length(filtered_countries)]),
+                    Country = filtered_countries,
+                    MinTemperature = filtered_min_temp,
+                    MaxTemperature = filtered_max_temp,
+                    AvgEvapotranspiration = filtered_avg_evap,
+                    MaxGusts = filtered_max_gusts
+                )
+
+                # Save to a CSV or another suitable format
+                csv_file = joinpath(destination_dir, "era5_data_$year-$month.csv")
+                CSV.write(csv_file, df)
+
+                # close access to dataset
+                close(dataset)
+                # remove downloaded file
             end
         end
     end
