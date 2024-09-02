@@ -118,21 +118,22 @@ function fetch_era5_data(start_year::Int, end_year::Int)
                 # Create a GEOS context for point-in-polygon operations
                 context = LibGEOS.Context()
 
-                # Initialize matrix to store country assignments
-                country_assignment = fill("", length(latitude), length(longitude))
+               # Initialize matrix to store country assignments
+                country_assignment = fill("", axes(latitude, 1), axes(longitude, 1))
 
                 # Assign grid points to countries using axes for indexing
                 for i in axes(latitude, 1)
                     for j in axes(longitude, 1)
-                        point = Point(longitude[j], latitude[i])
+                        point = LibGEOS.Point(longitude[j], latitude[i])
                         for feature in shapefile
-                            if intersects(point, feature.geometry)
-                                country_assignment[i, j] = feature.properties["ISO_CC"]
+                            if LibGEOS.intersects(point, feature.geometry)  # Qualify the intersects function
+                                country_assignment[i, j] = feature.properties["country_name"]
                                 break
                             end
                         end
                     end
                 end
+
 
                 sea_mask = country_assignment .== ""
 
