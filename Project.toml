@@ -1,9 +1,11 @@
 [deps]
+CDSAPI = "8a7b9de3-9c00-473e-88b4-7eccd7ef2fea"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DuckDB = "d2f5444f-75bc-4fdf-ac35-56f514c445e1"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"

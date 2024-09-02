@@ -6,11 +6,13 @@ using DataFrames
 using CSV
 using CodecZlib
 using Dates
+using CDSAPI
+using NCDatasets
 
 export fetch_hazard_data
 
 
-function fetch_hazard_data(start_year::Int, end_year::Int)
+function fetch_hazard_data_OLD(start_year::Int, end_year::Int)
     destination_dir = "data/raw/nathaz/"
     extraction_dir = joinpath(destination_dir, "extracted")
     mkpath(destination_dir)
@@ -123,6 +125,94 @@ function align_columns!(dfs::Vector{DataFrame})
     end
 end
 
+
+function fetch_hazard_data(start_year::Int, end_year::Int)
+    data = fetch_era5_data(start_year, end_year)
+    return data
+end
+
+function fetch_era5_data(start_year::Int, end_year::Int)
+    destination_dir = "DatAdapt-database/raw/era5/"
+    mkpath(destination_dir)
+    
+    # Define the years and months you want to download
+    years = string.(start_year:end_year)
+    months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+    
+    # Loop through each year and month to download data
+    for year in years
+        for month in months
+            output_file = joinpath(destination_dir, "era5_data_$year-$month.nc")
+            
+            if isfile(output_file)
+                println("File $output_file already exists. Skipping download.")
+            else
+                println("Downloading ERA5 data for $year-$month...")
+                
+                json_string = """
+                {
+                    "product_type": "reanalysis",
+                    "variable": [
+                        "2m_temperature", "total_precipitation", 'instantaneous_10m_wind_gust'
+                    ],
+                    "year": "$year",
+                    "month": "$month",
+                    "day": [
+                        "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+                        "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                        "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"
+                    ],
+                    "time": [
+                        "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00",
+                        "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00",
+                        "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"
+                    ],
+                    "format": "netcdf",
+                    'download_format': 'unarchived'
+                }
+                """
+                #println(json_string)  # Print the JSON string to check formatting
+                CDSAPI.retrieve("reanalysis-era5-single-levels", CDSAPI.py2ju(json_string), output_file)
+
+                println("Download complete: $output_file")
+            end
+        end
+    end
+    
+    # Process the downloaded files
+    println("Processing downloaded ERA5 data...")
+    combined_df = DataFrame()
+    files = readdir(destination_dir, join=true)
+
+    for file in files
+        if endswith(file, ".nc")
+            println("Processing $file...")
+            df = process_nc_file(file)
+            combined_df = vcat(combined_df, df; cols=:union)
+        end
+    end
+    
+    return combined_df
+end
+
+function process_nc_file(file::String)
+    # Load the NetCDF file and process it into a DataFrame
+    ds = Dataset(file)
+    varnames = keys(ds)
+    df = DataFrame()
+    
+    for varname in varnames
+        var = ds[varname]
+        if ndims(var) == 2  # Assuming 2D data for simplicity
+            df[!, Symbol(varname)] = vec(var[:])
+        elseif ndims(var) == 3  # Handle 3D data
+            df[!, Symbol(varname)] = vec(var[:, :, 1])  # Modify according to your needs
+        end
+    end
+    
+    close(ds)
+    return df
+end
 
 
 end

@@ -30,12 +30,12 @@ function fetch_damage_data()
 end
 
 function fetch_hazard_data()
-    H_data = HazardDataFetch.fetch_hazard_data(1980, 2021)
+    H_data = HazardDataFetch.fetch_hazard_data(2021, 2021)
     DatabaseAccess.write_large_duckdb_table!(H_data, DB_PATH_RAW, "hazard")
 end
 
 function fetch_baseline_hazard_data()
-    H_BL_data = HazardDataFetch.fetch_hazard_data(1930, 1979)
+    H_BL_data = HazardDataFetch.fetch_hazard_data(1950, 1979)
     DatabaseAccess.write_large_duckdb_table!(H_BL_data, DB_PATH_RAW, "hazard_baseline")
 end
 
