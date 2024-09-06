@@ -50,9 +50,9 @@ function fetch_era5_data(start_year::Int, end_year::Int)
                 request_params = Dict(
                     "product_type" => "reanalysis",
                     "variable" => [
-                        "2m_temperature", "total_precipitation", 
-                        "instantaneous_10m_wind_gust", 
-                        "potential_evaporation"
+                        "2m_temperature", "total_precipitation", "potential_evaporation",
+                        "sub_surface_runoff", "surface_runoff", 
+                        "volumetric_soil_water_layer_3", "instantaneous_10m_wind_gust"
                     ],
                     "year" => year,
                     "month" => month,
